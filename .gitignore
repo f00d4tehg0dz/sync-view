@@ -1,6 +1,5 @@
-history
-/history
 .history
+./history
 
 # Build output
 dist/

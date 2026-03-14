@@ -1,130 +1,37 @@
-# Sync View
+<p align="center">
+  <img src="logo.png" alt="Sync View" width="200">
+</p>
 
-A Firefox extension that displays your streaming activity as Discord Rich Presence. Supports YouTube, YouTube Music, Netflix, Spotify, Twitch, Hulu, Disney+, Prime Video, SoundCloud, Crunchyroll, Max, and Apple TV+.
+<h1 align="center">Sync View</h1>
 
-## How It Works
+<p align="center">
+  Show what you're streaming as Discord Rich Presence — automatically.
+  <br>
+  A Firefox extension + Windows companion app that syncs your media activity to Discord.
+</p>
 
-Sync View has three parts:
+<p align="center">
+  <img src="https://img.shields.io/badge/version-3.0.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/platform-Windows-0078D6?logo=windows" alt="Platform">
+  <img src="https://img.shields.io/badge/browser-Firefox-FF7139?logo=firefox" alt="Firefox">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+</p>
 
-1. **Firefox Extension** — A content script that detects media playback on supported streaming sites and extracts metadata (title, channel, progress, thumbnail).
-2. **host.exe** — A headless native messaging host that Firefox spawns automatically. It receives messages from the extension via stdin/stdout and forwards them to Discord's local IPC pipe.
-3. **SyncView.exe** — A desktop GUI companion app for first-time setup, configuration, and monitoring. It registers the native messaging host in the Windows registry and provides a settings panel and activity log.
+---
 
-```
-Firefox Extension  --stdin/stdout-->  host.exe  --named pipe-->  Discord
-                                                                    |
-SyncView.exe (setup/config/monitoring) ----named pipe--->  Discord  |
-```
+## What It Does
 
-## Prerequisites
+Play a video on YouTube, a song on Spotify, or a show on Netflix — Sync View detects it and updates your Discord profile in real time with the title, progress, artwork, and a link to what you're watching or listening to.
 
-- **Windows 10/11**
-- **Python 3.8+** with pip (check "Add to PATH" during install)
-- **Firefox** (v91+)
-- **Discord** desktop app (must be running)
+### Supported Services
 
-## Building from Source
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/f00d4tehg0dz/firefox-youtube-discord-richpresence-exentison.git
-cd firefox-youtube-discord-richpresence-exentison
-```
-
-### 2. Run the build script
-
-```bash
-build.bat
-```
-
-This will:
-- Install Python dependencies (PyInstaller, pystray, Pillow)
-- Build `dist/host.exe` (native messaging host)
-- Build `dist/SyncView.exe` (desktop GUI app)
-- Copy extension files to `dist/extension/`
-- Package the extension as `dist/sync-view.xpi`
-
-### 3. Build the installer (optional)
-
-If you have [Inno Setup 6+](https://jrsoftware.org/isinfo.php) installed:
-
-```bash
-ISCC.exe installer.iss
-```
-
-This creates `installer_output/SyncView-Setup-2.0.0.exe`, a full Windows installer that handles native host registration, startup configuration, and uninstallation.
-
-## Installation & Setup
-
-### Option A: Using the Installer
-
-1. Run `build.bat` to build everything
-2. Run `ISCC.exe installer.iss` to create the installer
-3. Run the installer — it will register the native host and set up everything automatically
-4. Install the Firefox extension (see Step 2 below)
-
-### Option B: Manual Setup
-
-#### Step 1: Register the Native Messaging Host
-
-Run `SyncView.exe` from the `dist/` folder. On first launch, the setup wizard will:
-- Create a native messaging manifest JSON file
-- Register it in the Windows registry under `HKCU\Software\Mozilla\NativeMessagingHosts\youtube_discord_rpc`
-- Configure startup and tray preferences
-
-You can also register manually:
-
-1. Create a file at `%APPDATA%\SyncView\youtube_discord_rpc.json`:
-
-```json
-{
-  "name": "youtube_discord_rpc",
-  "description": "Sync View native messaging host",
-  "path": "C:\\path\\to\\dist\\host.exe",
-  "type": "stdio",
-  "allowed_extensions": ["sync-view@example.com"]
-}
-```
-
-2. Add a registry key:
-   - Key: `HKEY_CURRENT_USER\Software\Mozilla\NativeMessagingHosts\youtube_discord_rpc`
-   - Default value: the full path to the JSON manifest file above
-
-#### Step 2: Install the Firefox Extension
-
-**For development/testing (temporary):**
-
-1. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
-2. Click **"Load Temporary Add-on..."**
-3. Select `dist/extension/manifest.json` (or any file inside the extension folder)
-4. The extension will be active until Firefox is restarted
-
-**For permanent local install (unsigned):**
-
-1. Open Firefox and navigate to `about:config`
-2. Set `xpinstall.signatures.required` to `false` (only works in Firefox Developer Edition, Nightly, or ESR)
-3. Open `about:addons`
-4. Click the gear icon and select **"Install Add-on From File..."**
-5. Select `dist/sync-view.xpi`
-
-#### Step 3: Verify It Works
-
-1. Make sure **Discord** is running
-2. Make sure **SyncView.exe** has been run at least once (to register the native host)
-3. Open a supported streaming site in Firefox (e.g., YouTube)
-4. Play a video
-5. Check your Discord profile — you should see a Rich Presence status with the media details
-
-## Supported Services
-
-| Service | Activity Type | Features |
-|---------|--------------|----------|
+| Service | Type | Details |
+|---------|------|---------|
 | YouTube | Watching | Title, channel, progress, thumbnail, watch link |
 | YouTube Music | Listening | Title, artist, progress, album art |
 | Netflix | Watching | Title, show name, progress |
 | Spotify | Listening | Title, artist, progress, album art |
-| Twitch | Watching | Stream title, streamer, game, live indicator, watch link |
+| Twitch | Watching | Stream title, streamer, game, LIVE indicator, watch link |
 | Hulu | Watching | Title, show name, progress |
 | Disney+ | Watching | Title, show name, progress |
 | Prime Video | Watching | Title, show name, progress |
@@ -133,185 +40,131 @@ You can also register manually:
 | Max | Watching | Title, show name, progress |
 | Apple TV+ | Watching | Title, show name, progress |
 
-## Publishing to Firefox Add-ons (AMO)
+## Installation
 
-To publish Sync View as a signed extension on [addons.mozilla.org](https://addons.mozilla.org):
+### Quick Start (Installer)
 
-### 1. Create a Mozilla Developer Account
+1. Download **SyncView-Setup-3.0.0.exe** from the [Releases](../../releases) page
+2. Run the installer — it will set up the companion app, native messaging host, and registry entries
+3. Install the Firefox extension from the `extension` folder included in the install directory (see [Installing the Extension](#installing-the-firefox-extension) below)
+4. Make sure **Discord** is running
+5. Play something on a supported site — your Discord status updates automatically
 
-1. Go to [addons.mozilla.org/developers](https://addons.mozilla.org/developers/)
-2. Sign in with a Firefox Account (or create one)
-3. Agree to the developer terms
+### Installing the Firefox Extension
 
-### 2. Update the Extension ID
+**From file (recommended):**
 
-Before submitting, replace the placeholder extension ID in `manifest.json`:
+1. Open Firefox and go to `about:addons`
+2. Click the gear icon and select **"Install Add-on From File..."**
+3. Select the `sync-view.xpi` file from the install directory
 
-```json
-"browser_specific_settings": {
-  "gecko": {
-    "id": "sync-view@your-domain.com"
-  }
-}
+> **Note:** Installing unsigned extensions requires Firefox Developer Edition, Nightly, or ESR with `xpinstall.signatures.required` set to `false` in `about:config`.
+
+**For development (temporary):**
+
+1. Open Firefox and go to `about:debugging#/runtime/this-firefox`
+2. Click **"Load Temporary Add-on..."**
+3. Select `manifest.json` from the project root
+4. The extension stays active until Firefox restarts
+
+## How It Works
+
+Sync View has three components:
+
+```
+Firefox Extension  ──stdin/stdout──▶  host.exe  ──named pipe──▶  Discord
+                                                                    │
+SyncView.exe (setup / config / monitoring) ──named pipe──▶  Discord │
 ```
 
-Use an email-style ID you own, or generate a UUID (`{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}`).
+1. **Firefox Extension** — A content script that detects media playback on supported sites and extracts metadata (title, artist/channel, progress, thumbnails). Uses the Media Session API where available, with DOM selector fallbacks for reliability.
 
-**Important:** Also update `allowed_extensions` in the native messaging manifest to match. This is set in `native-host/app.py` (line 281) and `installer.iss` (line 87).
+2. **host.exe** — A headless native messaging host that Firefox launches automatically. It receives messages from the extension via stdin/stdout and forwards them to Discord's local IPC pipe.
 
-### 3. Package the Extension
+3. **SyncView.exe** — A desktop companion app that handles first-time setup, registers the native messaging host in the Windows registry, and provides a settings panel, activity log, and connection monitoring.
 
-Run `build.bat` — it outputs `dist/sync-view.xpi`. Alternatively, manually zip the extension files:
+## Configuration
+
+SyncView stores its config at `%APPDATA%\SyncView\config.json`. Available settings (also accessible from the SyncView GUI):
+
+| Setting | Description |
+|---------|-------------|
+| Start with Windows | Launch SyncView automatically on login |
+| Minimize to tray | Minimize to system tray instead of taskbar |
+| Start minimized | Launch minimized (useful with startup enabled) |
+
+## Requirements
+
+- **Windows 10/11**
+- **Firefox** v91+
+- **Discord** desktop app (must be running for Rich Presence)
+
+## Building from Source
+
+### Prerequisites
+
+- Python 3.8+ with pip (ensure "Add to PATH" is checked during install)
+- [Inno Setup 6+](https://jrsoftware.org/isinfo.php) (optional, for building the installer)
+
+### Build
 
 ```bash
-cd dist/extension
-zip -r ../sync-view.xpi *
+# Run the build script — installs deps, compiles executables, packages the extension
+build.bat
 ```
 
-The `.xpi` must contain these files at the root (not inside a subfolder):
-- `manifest.json`
-- `content.js`
-- `background.js`
-- `popup/` (popup.html, popup.js, popup.css)
-- `icons/` (icon-48.png, icon-96.png)
+This produces:
+- `dist/SyncView.exe` — GUI companion app
+- `dist/host.exe` — Native messaging host
+- `dist/extension/` — Packaged Firefox extension files
 
-### 4. Submit to AMO
-
-1. Go to the [AMO submission page](https://addons.mozilla.org/developers/addon/submit/distribution)
-2. Choose **"On this site"** for public listing (or **"On your own"** for self-distribution with signing only)
-3. Upload `dist/sync-view.xpi`
-4. AMO will run automated validation — fix any errors it reports
-5. Fill in the listing details:
-   - **Name:** Sync View
-   - **Summary:** Shows your streaming activity on Discord Rich Presence
-   - **Description:** Detailed description of supported services and features
-   - **Categories:** Social & Communication
-   - **Screenshots:** Add screenshots of the popup UI and Discord Rich Presence output
-   - **Privacy policy:** Note that no data is collected — all processing is local via native messaging
-6. Submit for review
-
-### 5. AMO Review Notes
-
-Mozilla reviewers will need to know:
-
-- The extension uses the `nativeMessaging` permission to communicate with a local companion app (`host.exe`)
-- No data is sent to any remote server — all communication is local (Firefox -> host.exe -> Discord IPC pipe)
-- The `tabs` permission is used only to detect which streaming site is active
-- Source code is available on GitHub
-
-Typical review takes 1-5 days. You may be asked to provide the native host source code for review — point them to the GitHub repository.
-
-### 6. After Approval
-
-Once approved, users can install directly from AMO. They will still need to:
-1. Install the native host (via `SyncView.exe` or the Inno Setup installer)
-2. Have Discord running
-
-Consider linking to the installer download from the AMO listing description.
-
-## Discord Application Setup
-
-The extension uses Discord Application ID `1482383187882545233`. If you need to create your own:
-
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Click **"New Application"** and name it (this name appears in Discord as "Playing **name**")
-3. Copy the **Application ID**
-4. Update `DISCORD_CLIENT_ID` in both `native-host/host.py` and `native-host/app.py`
-5. (Optional) Under **Rich Presence > Art Assets**, upload default images
-
-## Troubleshooting
-
-### Extension says "Disconnected"
-- Make sure Discord is running
-- Make sure `SyncView.exe` has been run at least once to register the native host
-- Click "Reconnect" in the SyncView app
-- Check that `host.exe` exists in the same directory as `SyncView.exe`
-
-### No Rich Presence appears on Discord
-- Open Discord Settings > Activity Privacy > make sure "Display current activity" is enabled
-- Rich Presence is not visible to yourself — ask a friend to check, or use a second Discord account
-- The Discord Application ID must have a valid application on the Developer Portal
-
-### Native host not found
-- Re-run `SyncView.exe` and go to Settings > "Re-register Native Host"
-- Or check the registry key: `HKCU\Software\Mozilla\NativeMessagingHosts\youtube_discord_rpc` should point to a valid JSON manifest
-- The JSON manifest's `path` field must point to the actual location of `host.exe`
-
-### Extension doesn't detect media
-- Make sure you're on a supported site (see table above)
-- The content script needs the page to be fully loaded — wait a few seconds after navigating
-- Some sites (Netflix, Disney+, etc.) use DRM-protected players that may limit metadata availability
-
-## Landing Page & Cloudflare Pages
-
-The `site/` directory contains a static landing page for the project. To deploy it:
-
-### Deploy to Cloudflare Pages
-
-1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) > Workers & Pages > Create
-2. Connect your GitHub repository
-3. Configure the build:
-   - **Build command:** (leave empty — it's static HTML)
-   - **Build output directory:** `site`
-4. Deploy
-
-Or deploy manually via Wrangler CLI:
-
+To build the installer:
 ```bash
-npx wrangler pages deploy site --project-name=sync-view
+# Requires Inno Setup
+ISCC.exe installer.iss
+# Output: installer_output/SyncView-Setup-3.0.0.exe
 ```
-
-Your site will be available at `https://sync-view.pages.dev` (or your custom domain).
-
-### Update Notifications
-
-The landing page hosts a `version.json` file that SyncView.exe checks on startup:
-
-```json
-{
-  "version": "2.0.0",
-  "release_url": "https://github.com/f00d4tehg0dz/firefox-youtube-discord-richpresence-exentison/releases/latest",
-  "changelog": "Initial release with support for 12 streaming services."
-}
-```
-
-When you release a new version:
-
-1. Update `APP_VERSION` in `native-host/app.py` and `native-host/host.py`
-2. Update `version` in `manifest.json`
-3. Update `site/version.json` with the new version number, release URL, and changelog
-4. Build and publish the new release
-5. Deploy the updated `site/` to Cloudflare Pages
-
-SyncView.exe will show an in-app banner when an update is available, with a "Download" button linking to the release page.
-
-The update check URL defaults to `https://sync-view.pages.dev/version.json`. Change `UPDATE_CHECK_URL` in `native-host/app.py` if your domain differs.
 
 ## Project Structure
 
 ```
 sync-view/
-  manifest.json          # Firefox extension manifest
-  content.js             # Content script — detects media on streaming sites
-  background.js          # Background script — bridges content script to native host
-  popup/                 # Extension popup UI
-    popup.html
-    popup.js
-    popup.css
-  icons/                 # Extension and app icons
-  native-host/
-    host.py              # Headless native messaging host (-> host.exe)
-    app.py               # Desktop GUI app with setup wizard (-> SyncView.exe)
-    requirements.txt     # Python dependencies
-  site/                  # Landing page (deploy to Cloudflare Pages)
-    index.html
-    style.css
-    app.js
-    version.json         # Version manifest for update checking
-  build.bat              # Build script (PyInstaller + extension packaging)
-  installer.iss          # Inno Setup installer script
+├── manifest.json            # Firefox extension manifest (v2)
+├── content.js               # Content script — detects media on streaming sites
+├── background.js            # Background script — bridges content script ↔ native host
+├── popup/                   # Extension popup UI (status, now playing)
+├── icons/                   # Extension and app icons
+├── native-host/
+│   ├── host.py              # Native messaging host → host.exe
+│   ├── app.py               # Desktop GUI app → SyncView.exe
+│   └── requirements.txt     # Python dependencies (pystray, Pillow)
+├── build.bat                # Build script (PyInstaller + extension packaging)
+└── installer.iss            # Inno Setup installer script
 ```
+
+## Troubleshooting
+
+### Extension popup says "Disconnected"
+- Make sure Discord is running
+- Run SyncView.exe at least once to register the native host
+- Click **Reconnect** in the SyncView app
+- Verify `host.exe` exists in the same directory as `SyncView.exe`
+
+### Rich Presence doesn't appear on Discord
+- Go to Discord Settings → Activity Privacy → enable **"Display current activity as a status message"**
+- Rich Presence is **not visible to yourself** — ask a friend to check, or use a second account
+- Make sure the media is actually playing (paused content may clear the status)
+
+### Native host not found
+- Open SyncView and go to Settings → **"Re-register Native Host"**
+- Or verify the registry key: `HKCU\Software\Mozilla\NativeMessagingHosts\youtube_discord_rpc` points to a valid JSON manifest
+- The manifest's `path` field must point to the actual location of `host.exe`
+
+### Extension doesn't detect media
+- Confirm you're on a supported site (see table above)
+- Wait a few seconds after the page loads — the content script runs at `document_idle`
+- Some DRM-protected players may limit metadata availability
 
 ## License
 
-MIT
+[MIT](LICENSE)
