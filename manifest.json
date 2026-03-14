@@ -42,7 +42,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "sync-view@example.com",
+      "id": "sync-view@syncview.app",
       "strict_min_version": "91.0"
     }
   }
