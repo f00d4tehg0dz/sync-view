@@ -1,0 +1,11 @@
+history
+/history
+.history
+
+# Build output
+dist/
+build/
+installer_output/
+*.spec
+__pycache__/
+*.pyc
