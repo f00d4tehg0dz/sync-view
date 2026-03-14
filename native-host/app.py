@@ -33,7 +33,7 @@ import winreg
 APP_NAME = "Sync View"
 APP_VERSION = "3.0.0"
 DISCORD_CLIENT_ID = "1482383187882545233"
-UPDATE_CHECK_URL = "https://sync-view.pages.dev/version.json"
+UPDATE_CHECK_URL = "https://syncview.app/version.json"
 
 STARTUP_REG_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 STARTUP_REG_VALUE = "SyncView"
@@ -631,7 +631,7 @@ class MainApp:
                      bg="#45475a", fg=C_TEXT_DIM).pack(side="left", padx=(0, 8))
 
         def open_release():
-            url = release_url or "https://github.com/f00d4tehg0dz/firefox-youtube-discord-richpresence-exentison/releases"
+            url = release_url or "https://github.com/f00d4tehg0dz/sync-view/releases"
             webbrowser.open(url)
 
         tk.Button(banner, text="Download", command=open_release,
