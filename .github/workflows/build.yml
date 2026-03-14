@@ -1,0 +1,77 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: native-host/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r native-host/requirements.txt
+
+      - name: Build host.exe
+        run: >
+          python -m PyInstaller --noconfirm --onefile --console
+          --name "host"
+          --distpath "dist"
+          native-host/host.py
+
+      - name: Build SyncView.exe
+        run: >
+          python -m PyInstaller --noconfirm --onefile --windowed
+          --name "SyncView"
+          --icon "icons/icon.ico"
+          --add-data "icons/icon-48.png;."
+          --distpath "dist"
+          native-host/app.py
+
+      - name: Package Firefox extension
+        shell: bash
+        run: |
+          mkdir -p dist/extension
+          cp manifest.json dist/extension/
+          cp content.js dist/extension/
+          cp background.js dist/extension/
+          cp -r popup dist/extension/popup
+          cp -r icons dist/extension/icons
+          cd dist/extension
+          7z a -tzip ../sync-view.xpi *
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync-view-dist
+          path: |
+            dist/SyncView.exe
+            dist/host.exe
+            dist/sync-view.xpi
+            dist/extension/
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          generate_release_notes: true
+          files: |
+            dist/SyncView.exe
+            dist/host.exe
+            dist/sync-view.xpi
