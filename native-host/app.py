@@ -306,7 +306,7 @@ def register_native_host():
         "description": "Sync View native messaging host",
         "path": host_path.replace("/", "\\"),
         "type": "stdio",
-        "allowed_extensions": ["sync-view@example.com"],
+        "allowed_extensions": ["sync-view@syncview.app"],
     }
     with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)

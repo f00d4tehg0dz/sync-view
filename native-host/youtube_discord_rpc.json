@@ -3,5 +3,5 @@
   "description": "Sync View native messaging host",
   "path": "C:\\Users\\f00d4tehg0dz\\Documents\\GitHub\\firefox-youtube-discord-richpresence-exentison\\native-host\\youtube_discord_rpc.bat",
   "type": "stdio",
-  "allowed_extensions": ["sync-view@example.com"]
+  "allowed_extensions": ["sync-view@syncview.app"]
 }
