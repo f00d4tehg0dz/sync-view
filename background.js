@@ -96,7 +96,6 @@
       }
 
       // Buttons: link to content + Sync View website (visible to others, not yourself)
-      const isListening = data.activityType === 2;
       const actionLabel = isListening ? `Listen on ${data.siteName}` : `Watch on ${data.siteName}`;
       activity.buttons = [];
       if (data.url) {
