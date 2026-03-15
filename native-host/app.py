@@ -31,13 +31,15 @@ import winreg
 # ── Constants ────────────────────────────────────────────────────────────────
 
 APP_NAME = "Sync View"
-APP_VERSION = "3.0.1"
+APP_VERSION = "3.1.0"
 DISCORD_CLIENT_ID = "1482383187882545233"
 UPDATE_CHECK_URL = "https://syncview.app/version.json"
 
 STARTUP_REG_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 STARTUP_REG_VALUE = "SyncView"
 NATIVE_HOST_REG_KEY = r"Software\Mozilla\NativeMessagingHosts\youtube_discord_rpc"
+CHROME_HOST_REG_KEY = r"Software\Google\Chrome\NativeMessagingHosts\youtube_discord_rpc"
+EDGE_HOST_REG_KEY = r"Software\Microsoft\Edge\NativeMessagingHosts\youtube_discord_rpc"
 
 CONFIG_DIR = os.path.join(os.environ.get("APPDATA", ""), "SyncView")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
@@ -284,11 +286,11 @@ def is_native_host_registered():
 
 
 def register_native_host():
-    """Create the native messaging manifest and register it in the Windows registry."""
+    """Create the native messaging manifests and register them for Firefox, Chrome, and Edge."""
     app_dir = get_app_dir()
 
     # Determine the native host executable path
-    host_exe = os.path.join(app_dir, "host.exe")
+    host_exe = os.path.join(app_dir, "syncviewhost.exe")
     if os.path.exists(host_exe):
         host_path = host_exe
     else:
@@ -298,27 +300,55 @@ def register_native_host():
         with open(host_path, "w") as f:
             f.write(f'@echo off\npython "{host_py}" %*\n')
 
-    # Create the JSON manifest
-    manifest_path = os.path.join(CONFIG_DIR, "youtube_discord_rpc.json")
     os.makedirs(CONFIG_DIR, exist_ok=True)
-    manifest = {
+    host_path_win = host_path.replace("/", "\\")
+
+    # Firefox manifest (uses allowed_extensions)
+    firefox_manifest_path = os.path.join(CONFIG_DIR, "youtube_discord_rpc.json")
+    firefox_manifest = {
         "name": "youtube_discord_rpc",
         "description": "Sync View native messaging host",
-        "path": host_path.replace("/", "\\"),
+        "path": host_path_win,
         "type": "stdio",
         "allowed_extensions": ["sync-view@syncview.app"],
     }
-    with open(manifest_path, "w") as f:
-        json.dump(manifest, f, indent=2)
+    with open(firefox_manifest_path, "w") as f:
+        json.dump(firefox_manifest, f, indent=2)
 
-    # Register in Windows registry
-    try:
-        key = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, NATIVE_HOST_REG_KEY, 0, winreg.KEY_SET_VALUE)
-        winreg.SetValueEx(key, "", 0, winreg.REG_SZ, manifest_path)
-        winreg.CloseKey(key)
-        return True
-    except Exception:
-        return False
+    # Chrome/Edge manifest (uses allowed_origins with chrome-extension:// scheme)
+    # Load saved extension IDs from config
+    config = load_config()
+    origins = []
+    for ext_id in config.get("chromium_extension_ids", []):
+        ext_id = ext_id.strip()
+        if ext_id:
+            origins.append(f"chrome-extension://{ext_id}/")
+
+    chromium_manifest_path = os.path.join(CONFIG_DIR, "youtube_discord_rpc_chromium.json")
+    chromium_manifest = {
+        "name": "youtube_discord_rpc",
+        "description": "Sync View native messaging host",
+        "path": host_path_win,
+        "type": "stdio",
+        "allowed_origins": origins,
+    }
+    with open(chromium_manifest_path, "w") as f:
+        json.dump(chromium_manifest, f, indent=2)
+
+    # Register in Windows registry for all browsers
+    success = True
+    for reg_key, manifest_file in [
+        (NATIVE_HOST_REG_KEY, firefox_manifest_path),
+        (CHROME_HOST_REG_KEY, chromium_manifest_path),
+        (EDGE_HOST_REG_KEY, chromium_manifest_path),
+    ]:
+        try:
+            key = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, reg_key, 0, winreg.KEY_SET_VALUE)
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, manifest_file)
+            winreg.CloseKey(key)
+        except Exception:
+            success = False
+    return success
 
 
 # ── Tray Icon (pystray, optional) ───────────────────────────────────────────
@@ -465,8 +495,8 @@ class SetupWizard(tk.Toplevel):
         tk.Label(self.content, text=f"v{APP_VERSION}", font=("Segoe UI", 10), bg=C_BG, fg=C_TEXT_DIM).pack()
         tk.Label(self.content, text=(
             "This wizard will set up the native messaging host\n"
-            "so Firefox can send your streaming activity to Discord.\n\n"
-            "Supports YouTube, Netflix, Spotify, Twitch, and more.\n"
+            "so your browser can send streaming activity to Discord.\n\n"
+            "Supports Firefox, Chrome, and Edge.\n"
             "Make sure Discord is running before continuing."
         ), font=("Segoe UI", 11), bg=C_BG, fg=C_TEXT, justify="center").pack(pady=(30, 0))
 
@@ -477,8 +507,8 @@ class SetupWizard(tk.Toplevel):
         self.install_status.pack(fill="x", pady=4)
 
         items = [
-            ("Native messaging manifest", "Allows Firefox to talk to this app"),
-            ("Windows registry entry", "Registers the host with Firefox"),
+            ("Native messaging manifests", "Allows browsers to talk to this app"),
+            ("Windows registry entries", "Registers the host with Firefox, Chrome, and Edge"),
         ]
         self._install_labels = []
         for title, desc in items:
@@ -494,8 +524,8 @@ class SetupWizard(tk.Toplevel):
             self._install_labels.append(dot)
 
         tk.Label(self.content, text=(
-            "Click Next to install. This writes a small JSON file\n"
-            "and a registry key under HKCU (no admin required)."
+            "Click Next to install. This writes JSON manifest files\n"
+            "and registry keys for all browsers (no admin required)."
         ), font=("Segoe UI", 10), bg=C_BG, fg=C_TEXT_DIM, justify="left").pack(anchor="w", pady=(20, 0))
 
     def _do_install(self):
@@ -554,8 +584,8 @@ class MainApp:
         self.root = tk.Tk()
         self.root.title(APP_NAME)
         self.root.configure(bg=C_BG)
-        self.root.geometry("480x520")
-        self.root.minsize(400, 440)
+        self.root.geometry("520x580")
+        self.root.minsize(480, 520)
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
         # Try to set window icon
@@ -792,9 +822,29 @@ class MainApp:
             self._set_status("disconnected")
 
     def _poll_ui(self):
-        """Periodic UI refresh."""
-        if self.running:
-            self.root.after(5000, self._poll_ui)
+        """Periodic UI refresh — read shared state from syncviewhost.exe."""
+        if not self.running:
+            return
+        try:
+            state_file = os.path.join(CONFIG_DIR, "now_playing.json")
+            if os.path.exists(state_file):
+                with open(state_file, "r") as f:
+                    state = json.load(f)
+                title = state.get("title")
+                channel = state.get("channel")
+                connected = state.get("connected", False)
+                if connected:
+                    self._set_status("connected")
+                if title:
+                    self._set_now_playing(title, channel)
+                    self.current_video = title
+                elif self.current_video:
+                    # syncviewhost.exe cleared the activity
+                    self.current_video = None
+                    self._set_now_playing()
+        except Exception:
+            pass
+        self.root.after(3000, self._poll_ui)
 
     # ── Settings Window ──
 
@@ -802,7 +852,7 @@ class MainApp:
         win = tk.Toplevel(self.root)
         win.title("Settings")
         win.configure(bg=C_BG)
-        win.geometry("400x380")
+        win.geometry("440x580")
         win.resizable(False, False)
         win.transient(self.root)
         win.grab_set()
@@ -838,6 +888,42 @@ class MainApp:
         # Separator
         tk.Frame(settings_frame, bg=C_BORDER, height=1).pack(fill="x", pady=16)
 
+        # Chrome/Edge extension IDs
+        tk.Label(settings_frame, text="Chrome / Edge Extension IDs",
+                 font=("Segoe UI", 11, "bold"), bg=C_BG, fg=C_TEXT).pack(anchor="w")
+        tk.Label(settings_frame, text="Paste your extension ID from chrome://extensions or edge://extensions",
+                 font=("Segoe UI", 9), bg=C_BG, fg=C_TEXT_DIM).pack(anchor="w", pady=(0, 4))
+
+        saved_ids = self.config.get("chromium_extension_ids", [])
+        ext_id_var = tk.StringVar(value=", ".join(saved_ids))
+
+        ext_id_row = tk.Frame(settings_frame, bg=C_BG)
+        ext_id_row.pack(fill="x", pady=(0, 4))
+        ext_id_entry = tk.Entry(ext_id_row, textvariable=ext_id_var, bg=C_BG_INPUT, fg=C_TEXT,
+                                insertbackground=C_TEXT, relief="flat", font=("Segoe UI", 10))
+        ext_id_entry.pack(side="left", fill="x", expand=True, ipady=4)
+
+        ext_id_status = tk.Label(settings_frame, text="", font=("Segoe UI", 9), bg=C_BG, fg=C_GREEN)
+        ext_id_status.pack(anchor="w")
+
+        def save_ext_ids():
+            raw_ids = ext_id_var.get().strip()
+            ids = [x.strip() for x in raw_ids.replace(";", ",").split(",") if x.strip()]
+            self.config["chromium_extension_ids"] = ids
+            save_config(self.config)
+            register_native_host()
+            ext_id_status.configure(text=f"Saved {len(ids)} extension ID(s) and re-registered native host", fg=C_GREEN)
+            self._log(f"Chrome/Edge extension IDs saved: {ids}")
+
+        tk.Button(ext_id_row, text="Save IDs", command=save_ext_ids,
+                  bg=C_ACCENT, fg="#1e1e2e", activebackground="#b491d4",
+                  activeforeground="#1e1e2e", relief="flat",
+                  padx=10, pady=2, font=("Segoe UI", 9, "bold"), cursor="hand2"
+                  ).pack(side="right", padx=(8, 0))
+
+        # Separator
+        tk.Frame(settings_frame, bg=C_BORDER, height=1).pack(fill="x", pady=8)
+
         # Re-run setup
         tk.Button(settings_frame, text="Re-register Native Host", command=self._reregister_host,
                   bg=C_BG_INPUT, fg=C_TEXT, activebackground=C_BORDER,
@@ -856,7 +942,13 @@ class MainApp:
             self.config["start_with_windows"] = var_startup.get()
             self.config["minimize_to_tray"] = var_tray.get()
             self.config["start_minimized"] = var_minimized.get()
+            # Save Chrome/Edge extension IDs
+            raw_ids = ext_id_var.get().strip()
+            ids = [x.strip() for x in raw_ids.replace(";", ",").split(",") if x.strip()]
+            self.config["chromium_extension_ids"] = ids
             save_config(self.config)
+            # Re-register native host with updated extension IDs
+            register_native_host()
             self._log("Settings saved")
             win.destroy()
 
@@ -980,6 +1072,14 @@ class MainApp:
 
 
 def main():
+    # Enable DPI awareness for crisp text on high-DPI displays
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Per-monitor DPI aware
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
     app = MainApp()
     app.run()
 

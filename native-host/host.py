@@ -141,13 +141,29 @@ def send_message(msg):
     sys.stdout.buffer.flush()
 
 
+STATE_FILE = os.path.join(os.environ.get("APPDATA", ""), "SyncView", "now_playing.json")
+
+
+def write_state(title=None, channel=None, connected=False):
+    """Write current playback state to a shared file for SyncView.exe to read."""
+    try:
+        os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+        state = {"title": title, "channel": channel, "connected": connected}
+        with open(STATE_FILE, "w") as f:
+            json.dump(state, f)
+    except Exception:
+        pass
+
+
 def main():
     discord = DiscordIPC(DISCORD_CLIENT_ID)
 
     if discord.connect():
         send_message({"type": "CONNECTED"})
+        write_state(connected=True)
     else:
         send_message({"type": "DISCONNECTED", "error": "Could not connect to Discord"})
+        write_state(connected=False)
 
     while True:
         try:
@@ -174,20 +190,25 @@ def main():
                 success = discord.set_activity(discord_activity)
                 if success:
                     send_message({"type": "CONNECTED"})
+                    write_state(title=activity.get("details"), channel=activity.get("state"), connected=True)
                 else:
                     if discord.connect():
                         discord.set_activity(discord_activity)
                         send_message({"type": "CONNECTED"})
+                        write_state(title=activity.get("details"), channel=activity.get("state"), connected=True)
                     else:
                         send_message({"type": "DISCONNECTED"})
+                        write_state(connected=False)
 
             elif message["type"] == "CLEAR_ACTIVITY":
                 discord.clear_activity()
                 send_message({"type": "CONNECTED"})
+                write_state(connected=True)
 
         except Exception as e:
             send_message({"type": "ERROR", "error": str(e)})
 
+    write_state(connected=False)
     discord.close()
 
 
