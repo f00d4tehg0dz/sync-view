@@ -387,6 +387,52 @@
         };
       },
     },
+
+    plex: {
+      name: "Plex",
+      hostname: "app.plex.tv",
+      activityType: 3,
+      watchPattern: /./,
+      getData() {
+        const video = document.querySelector("video");
+        if (!video || !video.src) return null;
+
+        // Plex populates Media Session API when playing content
+        const meta = navigator.mediaSession?.metadata;
+        const title = meta?.title ||
+          document.querySelector('[class*="MetadataPosterTitle"] a')?.textContent?.trim() ||
+          document.querySelector('[data-testid="metadata-title"]')?.textContent?.trim() ||
+          document.querySelector('[class*="PlayerControlsMetadata"] [class*="Title"]')?.textContent?.trim() ||
+          document.title.replace("▶ ", "").replace(" - Plex", "").trim();
+
+        const channel = meta?.artist || meta?.album ||
+          document.querySelector('[class*="MetadataPosterTitle"] span[class*="MetadataYear"]')?.textContent?.trim() ||
+          document.querySelector('[data-testid="metadata-subtitle"]')?.textContent?.trim() ||
+          document.querySelector('[class*="PlayerControlsMetadata"] [class*="Subtitle"]')?.textContent?.trim() || "";
+
+        const artwork = meta?.artwork?.[0]?.src || "";
+
+        // Plex live TV detection
+        const isLive = !!document.querySelector('[class*="LiveBadge"]') ||
+          window.location.href.includes("/livetv/");
+
+        if (!title || title === "Plex") return null;
+
+        // Determine if this is music (Listening) or video (Watching)
+        const isMusicSection = window.location.href.includes("/music/") ||
+          document.querySelector('[class*="AudioPlayer"]') !== null;
+
+        return {
+          title, channel, isLive,
+          currentTime: Math.floor(video.currentTime || 0),
+          duration: Math.floor(video.duration || 0),
+          paused: video.paused,
+          thumbnailUrl: artwork,
+          url: window.location.href,
+          activityTypeOverride: isMusicSection ? 2 : undefined,
+        };
+      },
+    },
   };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -414,6 +460,7 @@
     if (host.includes("crunchyroll.com")) return SITES.crunchyroll;
     if (host.includes("max.com")) return SITES.max;
     if (host === "tv.apple.com") return SITES.appleTv;
+    if (host.includes("plex.tv")) return SITES.plex;
     return null;
   }
 
@@ -451,7 +498,7 @@
         data: {
           ...data,
           siteName: site.name,
-          activityType: site.activityType,
+          activityType: data.activityTypeOverride || site.activityType,
         },
       });
       lastSentData = { ...data };

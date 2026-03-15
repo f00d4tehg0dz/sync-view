@@ -95,12 +95,15 @@
         };
       }
 
-      // Buttons: link to content (visible to others, not yourself)
-      if (data.url && (data.url.includes("youtube.com") || data.url.includes("twitch.tv") || data.url.includes("soundcloud.com"))) {
-        activity.buttons = [
-          { label: `Watch on ${data.siteName}`, url: data.url.substring(0, 512) },
-        ];
+      // Buttons: link to content + Sync View website (visible to others, not yourself)
+      const isListening = data.activityType === 2;
+      const actionLabel = isListening ? `Listen on ${data.siteName}` : `Watch on ${data.siteName}`;
+      activity.buttons = [];
+      if (data.url) {
+        activity.buttons.push({ label: actionLabel, url: data.url.substring(0, 512) });
       }
+      activity.buttons.push({ label: "Get Sync View", url: "https://syncview.app/" });
+
 
       sendToNativeHost({ type: "SET_ACTIVITY", activity });
 

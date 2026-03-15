@@ -9,7 +9,7 @@ Full GUI with:
   - System tray icon when minimized
   - Native messaging bridge for the Firefox extension
   - Supports YouTube, Netflix, Spotify, Twitch, Hulu, Disney+, Prime Video,
-    SoundCloud, Crunchyroll, Max, Apple TV+, and YouTube Music
+    SoundCloud, Crunchyroll, Max, Apple TV+, YouTube Music, and Plex
 """
 
 import ctypes
@@ -31,7 +31,7 @@ import winreg
 # ── Constants ────────────────────────────────────────────────────────────────
 
 APP_NAME = "Sync View"
-APP_VERSION = "3.0.0"
+APP_VERSION = "3.0.1"
 DISCORD_CLIENT_ID = "1482383187882545233"
 UPDATE_CHECK_URL = "https://syncview.app/version.json"
 
