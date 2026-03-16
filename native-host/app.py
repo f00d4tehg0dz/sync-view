@@ -786,7 +786,11 @@ class MainApp:
         self.root.after(0, _do)
 
     def _set_status(self, status):
-        """Update Discord connection status (thread-safe)."""
+        """Update Discord connection status (thread-safe). Only logs on change."""
+        prev = getattr(self, '_last_status', None)
+        if status == prev:
+            return
+        self._last_status = status
         def _do():
             if status == "connected":
                 self.status_dot.set_color(C_GREEN)
