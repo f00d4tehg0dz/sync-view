@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/browser-Firefox-FF7139?logo=firefox" alt="Firefox">
   <img src="https://img.shields.io/badge/browser-Chrome-4285F4?logo=googlechrome" alt="Chrome">
   <img src="https://img.shields.io/badge/browser-Edge-0078D7?logo=microsoftedge" alt="Edge">
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+  <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License">
 </p>
 
 ---
@@ -226,4 +226,4 @@ sync-view/
 
 ## License
 
-[MIT](LICENSE)
+[AGPL-3.0](LICENSE)
